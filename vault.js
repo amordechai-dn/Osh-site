@@ -1,4 +1,4 @@
-import {validate} from './model.js?v=1.1.2';
+import {validate} from './model.js?v=1.2.0';
 const enc=new TextEncoder(),dec=new TextDecoder();
 const SLOT='osh.vault.v1',ATTEMPTS='osh.attempts.v1';
 export const b64=b=>{const bytes=new Uint8Array(b);let text='';for(let i=0;i<bytes.length;i+=16384)text+=String.fromCharCode(...bytes.subarray(i,i+16384));return btoa(text)};
@@ -21,3 +21,6 @@ export async function biometric(){const meta=read();if(attempts()>=5||!meta.biom
 // Portable encrypted transfer: the existing PIN envelope travels unchanged.
 export async function deviceBackup(key,data){const meta=read();if(attempts()>=5||!meta?.pinWrap)throw Error('יש לפתוח את הכספת לפני העברה');return {format:'osh-device-transfer-v1',id:data.id,salt:meta.salt,pinWrap:meta.pinWrap,recoveryWrap:meta.recoveryWrap,payload:await seal(key,data),exportedAt:new Date().toISOString()}}
 export async function importDevice(source,pin){if(source?.format!=='osh-device-transfer-v1'||!source.pinWrap||!source.recoveryWrap||!source.salt)throw Error('קובץ העברה לא תקין');if(attempts()>=5)throw Error('הגישה במכשיר נחסמה. יש להשתמש בשחזור באמצעות מפתח');let raw;try{raw=unb64(await open(await pinKey(pin,source.salt),source.pinWrap))}catch{localStorage.setItem(ATTEMPTS,String(attempts()+1));throw Error('הקוד אינו מתאים לקובץ ההעברה')}const key=await rawKey(raw),data=validate(await open(key,source.payload));if(data.id!==source.id)throw Error('זהות הכספת אינה תואמת לקובץ');const meta={format:'osh-encrypted-v1',id:source.id,salt:source.salt,pinWrap:source.pinWrap,recoveryWrap:source.recoveryWrap,payload:source.payload};localStorage.setItem(SLOT,JSON.stringify(meta));localStorage.setItem(ATTEMPTS,'0');return {key,meta,data,raw}}
+// GitHub credentials authorize access; the existing PIN decrypts the shared vault.
+export async function accountBackup(key,data){const meta=read();return {...await backup(key,data),salt:meta.salt,pinWrap:meta.pinWrap}}
+export async function importAccount(source,pin,name){if(!source?.pinWrap||!source?.salt)throw Error('הגיבוי עדיין אינו מוגדר לכניסה עם PIN. יש לסנכרן מהמכשיר המקורי');const raw=unb64(await open(await pinKey(pin,source.salt),source.pinWrap)),key=await rawKey(raw),data=validate(await open(key,source.payload));if(data.profile?.name?.trim()!==name.trim())throw Error('השם או הקוד אינם תואמים לנתונים במאגר');return importDevice({...source,format:'osh-device-transfer-v1'},pin)}
