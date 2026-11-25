@@ -50,3 +50,5 @@ dialog summary{min-height:44px;cursor:pointer;padding:10px 12px;border:1px solid
 @media(max-height:500px){#root:has(>.auth){padding:16px}.auth{padding:24px;gap:14px}.app-header{padding-block:9px}.monthbar{padding-bottom:8px}.main{padding-top:10px}.nav{padding-top:5px;padding-bottom:5px}.nav button{min-height:48px;padding-block:5px}dialog{max-height:calc(100dvh - 16px)}dialog header{padding-top:10px;padding-bottom:8px}dialog .dialog-body{padding-bottom:16px}}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 .auth{min-width:0}.recovery-key{min-width:0;max-width:100%;word-break:break-all}
+
+.biometric-unlock{display:flex;align-items:center;justify-content:center;gap:9px}
