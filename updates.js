@@ -9,12 +9,21 @@ export function startUpdates({version,isSafe,save}){
   };
   const safe=()=>!document.hidden&&navigator.onLine&&Date.now()-lastInput>5000&&isSafe();
   async function apply(){
-    if(!pending||applying||!safe())return;
+    if(!pending||applying||registration?.installing||!safe())return;
     applying=true;
     try{
       await save();
       if(!safe()){applying=false;return;}
-      registration?.waiting?.postMessage('ACTIVATE');
+      if(registration?.waiting){
+        await new Promise(resolve=>{
+          const done=()=>{clearTimeout(timer);navigator.serviceWorker.removeEventListener('controllerchange',done);resolve()};
+          const timer=setTimeout(done,5000);
+          navigator.serviceWorker.addEventListener('controllerchange',done);
+          registration.waiting.postMessage('ACTIVATE');
+        });
+        await save();
+        if(!safe()){applying=false;return;}
+      }
       const url=new URL(location.href);url.searchParams.set('v',pending);
       location.replace(url.href);
     }catch{applying=false;}
