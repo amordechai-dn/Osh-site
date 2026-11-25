@@ -1,9 +1,9 @@
-import * as M from './model.js?v=1.4.2';
-import * as V from './vault.js?v=1.4.2';
-import * as S from './sync.js?v=1.4.2';
-import {rememberSession,restoreSession,forgetSession} from './session.js?v=1.4.2';
-import {seedDefaults,hasUserContent,findPlace,normalizeName} from './defaults.js?v=1.4.2';
-import {startUpdates} from './updates.js?v=1.4.2';
+import * as M from './model.js?v=1.5.0';
+import * as V from './vault.js?v=1.5.0';
+import * as S from './sync.js?v=1.5.0';
+import {rememberSession,restoreSession,forgetSession} from './session.js?v=1.5.0';
+import {seedDefaults,hasUserContent,findPlace,normalizeName} from './defaults.js?v=1.5.0';
+import {startUpdates} from './updates.js?v=1.5.0';
 const root=document.querySelector('#root'),modal=document.querySelector('#modal');
 let db=null,key=null,raw=null,sessionPin=null,month=M.monthNow(),view='overview',planMode='month',saving=Promise.resolve(),syncing=false,syncHealth='idle',syncMessage='',autoTimer=null,lastFocus=null,uiEpoch=0;
 const labels={overview:'סקירה',plan:'תכנון',income:'הכנסות',expenses:'הוצאות',savings:'חסכונות'},singular={income:'הכנסה',expenses:'הוצאה',savings:'הפקדה'};
@@ -14,7 +14,7 @@ const money=n=>new Intl.NumberFormat('he-IL',{style:'currency',currency:'ILS',mi
 const color=n=>n<0?'negative':n>0?'positive':'zero';
 const numberInput=(name,value='',min='0.01')=>`<input name="${name}" type="number" inputmode="decimal" min="${min}" max="1000000000" step="0.01" value="${value}" required>`;
 const cents=v=>{const n=Math.round(Number(v)*100);if(!Number.isSafeInteger(n)||n<0||n>1e11)throw Error('יש להזין סכום תקין');return n};
-const brand=()=>`<div class="brand"><img src="./icon.svg" alt=""><div class="brand-name">Osh<small>v${M.VERSION}</small></div></div>`;
+const brand=()=>`<div class="brand"><img src="./logo.svg?v=${M.VERSION}" alt=""><div class="brand-name">Osh<small>v${M.VERSION}</small></div></div>`;
 function toast(text){const e=document.querySelector('#toast');e.textContent=text;setTimeout(()=>{if(e.textContent===text)e.textContent=''},3500)}
 function err(error){console.error(error);if(modal.open){let e=modal.querySelector('[role=alert]');if(!e){e=document.createElement('div');e.setAttribute('role','alert');e.className='errorbox';modal.querySelector('.dialog-body').prepend(e)}e.textContent=error.message||String(error)}else toast(error.message||String(error))}
 function sheet(title,body){lastFocus=document.activeElement;if(modal.open)modal.close();modal.innerHTML=`<header><div class="dialog-title">${['קטגוריות','מקומות וקטגוריות','גיבוי וסנכרון','גרסאות ועדכונים'].includes(title)?action('settings',icon('right'),'aria-label="חזרה להגדרות"','iconbutton'):''}<h3>${esc(title)}</h3></div><button class="iconbutton" data-action="close" aria-label="סגירה">${icon('x')}</button></header><div class="dialog-body">${body}</div>`;modal.showModal();setTimeout(()=>modal.querySelector('input:not([type=hidden]),select,button')?.focus(),30)}

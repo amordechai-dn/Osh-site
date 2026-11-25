@@ -56,3 +56,5 @@ dialog summary{min-height:44px;cursor:pointer;padding:10px 12px;border:1px solid
 .sync-badge{display:inline-block;border-radius:7px;padding:3px 8px;font-size:12px;line-height:1.5;color:#73736e;background:#f1f1ed}.sync-badge.sync-ok{color:#3e7450;background:#eaf4ed}.sync-badge.sync-error{color:#a8433f;background:#fcf0ed}
 
 [hidden]{display:none!important}
+
+.brand-name{font-weight:650;letter-spacing:-1.2px}
