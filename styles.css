@@ -3,3 +3,18 @@
 .statusline{align-items:center}.statusline button{min-height:34px;padding:5px 10px;font-size:12px}
 
 .brand-name{display:flex;align-items:baseline;gap:7px;white-space:nowrap}.brand-name small{display:inline-block;margin-top:0;font-size:11px}
+
+/* Settings: compact, grouped controls with a single clear hierarchy. */
+.dialog-title{display:flex;align-items:center;gap:9px;min-width:0}
+.settings-profile{display:flex;align-items:center;gap:12px;padding:4px 0 16px;border-bottom:1px solid #e7e7e0}
+.profile-avatar{display:grid;place-items:center;flex:none;width:42px;height:42px;border-radius:50%;background:#eeece4;color:#575449;font-size:20px}
+.settings-profile strong{font-size:17px;font-weight:500}.settings-profile small{display:block;font-size:12px;margin-top:2px}
+.settings-group{margin-top:18px}.settings-group h4{font-size:13px;font-weight:500;color:#78776e;margin:0 2px 8px}
+.setting-button{display:flex;align-items:center;text-align:right;gap:10px;width:100%;margin:6px 0;padding:10px 12px;min-height:46px;background:#fafaf7;border-color:#e1e1d9;font-size:14px}
+.setting-button>.icon{width:15px;height:15px;color:#8c8b80}.setting-icon{display:flex;color:#6e6d62}.setting-icon .icon{width:18px;height:18px}.setting-label{flex:1}.setting-meta{font-size:12px;color:#7c796e;white-space:nowrap}
+.settings-advanced{margin-top:8px}.settings-advanced>summary,.connection-help>summary{display:flex;align-items:center;justify-content:space-between;list-style:none;border:1px solid #e1e1d9;border-radius:11px;background:#fafaf7;padding:11px 12px;min-height:44px;font-size:14px;cursor:pointer}.settings-advanced>summary::-webkit-details-marker,.connection-help>summary::-webkit-details-marker{display:none}
+.settings-advanced[open]>summary .icon{transform:rotate(180deg)}.settings-advanced>div{padding:2px 8px 0}
+.settings-footer{padding-top:16px;text-align:center}.settings-footer button{min-height:36px;font-size:12px;padding:7px 13px;color:#737166;background:white}
+.connection-help{margin:12px 0}.connection-help p{font-size:13px;color:#73736b;margin:10px 0}.sync-state{font-size:14px;color:#727067;padding:5px 0}
+@media(hover:hover){.settings-advanced>summary:hover,.connection-help>summary:hover{background:#eeeee8}}
+.settings-advanced>summary:focus-visible,.connection-help>summary:focus-visible{outline:3px solid #b3975c;outline-offset:3px}
