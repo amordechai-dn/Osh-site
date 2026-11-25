@@ -52,3 +52,5 @@ dialog summary{min-height:44px;cursor:pointer;padding:10px 12px;border:1px solid
 .auth{min-width:0}.recovery-key{min-width:0;max-width:100%;word-break:break-all}
 
 .biometric-unlock{display:flex;align-items:center;justify-content:center;gap:9px}
+
+.sync-badge{display:inline-block;border-radius:7px;padding:3px 8px;font-size:12px;line-height:1.5;color:#73736e;background:#f1f1ed}.sync-badge.sync-ok{color:#3e7450;background:#eaf4ed}.sync-badge.sync-error{color:#a8433f;background:#fcf0ed}
