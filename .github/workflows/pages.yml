@@ -22,7 +22,7 @@ jobs:
       - name: Prepare public assets
         run: |
           mkdir _site
-          cp index.html styles.css app.js model.js vault.js sync.js updates.js defaults.js icon.svg manifest.webmanifest sw.js version.json _site/
+          cp index.html styles.css app.js model.js vault.js sync.js updates.js defaults.js session.js icon.svg manifest.webmanifest sw.js version.json _site/
           cp -R fonts _site/fonts
           touch _site/.nojekyll
       - uses: actions/upload-pages-artifact@v5
