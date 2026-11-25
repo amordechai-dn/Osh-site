@@ -1,9 +1,9 @@
-import * as M from './model.js?v=1.4.0';
-import * as V from './vault.js?v=1.4.0';
-import * as S from './sync.js?v=1.4.0';
-import {rememberSession,restoreSession,forgetSession} from './session.js?v=1.4.0';
-import {seedDefaults,hasUserContent,findPlace,normalizeName} from './defaults.js?v=1.4.0';
-import {startUpdates} from './updates.js?v=1.4.0';
+import * as M from './model.js?v=1.4.1';
+import * as V from './vault.js?v=1.4.1';
+import * as S from './sync.js?v=1.4.1';
+import {rememberSession,restoreSession,forgetSession} from './session.js?v=1.4.1';
+import {seedDefaults,hasUserContent,findPlace,normalizeName} from './defaults.js?v=1.4.1';
+import {startUpdates} from './updates.js?v=1.4.1';
 const root=document.querySelector('#root'),modal=document.querySelector('#modal');
 let db=null,key=null,raw=null,sessionPin=null,month=M.monthNow(),view='overview',planMode='month',saving=Promise.resolve(),syncing=false,syncHealth='idle',autoTimer=null,lastFocus=null,uiEpoch=0;
 const labels={overview:'סקירה',plan:'תכנון',income:'הכנסות',expenses:'הוצאות',savings:'חסכונות'},singular={income:'הכנסה',expenses:'הוצאה',savings:'הפקדה'};
@@ -66,7 +66,7 @@ function syncLabel(state,summary){return summary&&state.tone==='sync-ok'&&db.con
 function syncBadge(summary=false){const state=syncStatus();return `<span data-sync-status data-sync-summary="${summary}" class="sync-badge ${state.tone}">${syncLabel(state,summary)}</span>`}
 function refreshSyncStatus(){const state=syncStatus();root.parentElement.querySelectorAll('[data-sync-status]').forEach(el=>{el.className='sync-badge '+state.tone;el.textContent=syncLabel(state,el.dataset.syncSummary==='true')})}
 function settingButton(name,label,glyph,extra='',meta=''){return `<button class="setting-button" data-action="${name}" ${extra}><span class="setting-icon">${icon(glyph)}</span><span class="setting-label">${label}</span>${meta?`<span class="setting-meta">${meta}</span>`:''}${icon('left')}</button>`}
-function settings(){sheet('הגדרות',`<div class="settings-profile"><span class="profile-avatar">${esc((db.profile?.name||'O').slice(0,1))}</span><div><strong>${esc(db.profile?.name||'הכספת שלי')}</strong><small>במכשיר הזה</small></div></div><section class="settings-group" aria-label="תכנון"><h4>תכנון</h4>${settingButton('manage-categories','קטגוריות ותקציבים','plan')}${settingButton('places','מקומות','expenses')}</section><section class="settings-group" aria-label="נתונים"><h4>נתונים</h4>${settingButton('sync-settings','גיבוי וסנכרון','settings','',syncBadge())}${settingButton('export-backup','הורדת גיבוי','savings')}${settingButton('export-csv','ייצוא לגיליון','chart')}</section><section class="settings-group" aria-label="אבטחה"><h4>אבטחה</h4>${settingButton('enable-biometric','פתיחה ביומטרית','lock','',V.read()?.biometric?'פעילה':'הפעלה')}${settingButton('lock','נעילה עכשיו','lock')}${db.demo?settingButton('reset-demo','מחיקת ההדגמה','x'):''}</section><div class="settings-footer">${action('releases',`Osh v${M.VERSION} · עדכונים`)}</div>`)}
+function settings(){sheet('הגדרות',`<div class="settings-profile"><span class="profile-avatar">${esc((db.profile?.name||'O').slice(0,1))}</span><div><strong>${esc(db.profile?.name||'הכספת שלי')}</strong><small>במכשיר הזה</small></div></div><section class="settings-group" aria-label="תכנון"><h4>תכנון</h4>${settingButton('manage-categories','קטגוריות ותקציבים','plan')}${settingButton('places','מקומות','expenses')}</section><section class="settings-group" aria-label="נתונים"><h4>נתונים</h4>${settingButton('sync-settings','גיבוי וסנכרון','settings','',syncBadge())}${settingButton('export-csv','ייצוא לגיליון','chart')}</section><section class="settings-group" aria-label="אבטחה"><h4>אבטחה</h4>${settingButton('enable-biometric','פתיחה ביומטרית','lock','',V.read()?.biometric?'פעילה':'הפעלה')}${settingButton('lock','נעילה עכשיו','lock')}${db.demo?settingButton('reset-demo','מחיקת ההדגמה','x'):''}</section><div class="settings-footer">${action('releases',`Osh v${M.VERSION} · עדכונים`)}</div>`)}
 function placeManager(){
   const places=M.list(db,'place'),groups=M.list(db,'category').map(category=>({category,places:places.filter(p=>p.category===category.id)})).filter(group=>group.places.length);
   const unassigned=places.filter(p=>!db.entities[p.category]||db.entities[p.category].deleted);if(unassigned.length)groups.push({category:{name:'ללא קטגוריה'},places:unassigned});
@@ -139,7 +139,6 @@ if(a==='manage-categories'){sheet('קטגוריות',action('category','קטגו
 if(a==='sync-settings')syncSettings();if(a==='sync-now'){close();await sync()}
 if(a==='disconnect')ask('ניתוק הגיבוי','הגיבוי במאגר יישמר, אך המכשיר יפסיק לסנכרן.',async()=>{delete db.connection;delete db.syncBase;syncHealth='idle';await save({auto:false});render()});
 if(a==='export-device'){await saving;download(`Osh-device-transfer-${M.today()}.json`,JSON.stringify(await V.deviceBackup(key,safeDB())));toast('קובץ ההעברה הורד')}
-if(a==='export-backup'){await saving;download(`Osh-backup-${M.today()}.json`,JSON.stringify(await V.backup(key,safeDB())));toast('הגיבוי המוצפן הורד')}
 if(a==='export-csv'){download(`Osh-transactions-${M.today()}.csv`,M.csv(db),'text/csv;charset=utf-8');toast('הקובץ מכיל נתונים גלויים — יש לשמור אותו במקום בטוח')}
 if(a==='enable-biometric'){await saving;await V.enableBiometric(raw);toast('פתיחה באמצעות המכשיר הופעלה');settings()}
 if(a==='lock')await lock();
