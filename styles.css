@@ -18,3 +18,35 @@
 .connection-help{margin:12px 0}.connection-help p{font-size:13px;color:#73736b;margin:10px 0}.sync-state{font-size:14px;color:#727067;padding:5px 0}
 @media(hover:hover){.settings-advanced>summary:hover,.connection-help>summary:hover{background:#eeeee8}}
 .settings-advanced>summary:focus-visible,.connection-help>summary:focus-visible{outline:3px solid #b3975c;outline-offset:3px}
+
+/* Responsive entry: a centered card on desktop, a natural full-width flow on phones. */
+#root:has(>.auth){min-height:100dvh;display:grid;place-items:center;padding:32px 24px}
+.auth{width:min(100%,460px);max-width:460px;min-height:0;margin:0;padding:36px;gap:22px;border:1px solid #e0e0d7;border-radius:24px}
+.auth form{width:100%;min-width:0}.auth-help{display:flex;justify-content:center}.auth-help button{font-size:13px;background:#fff;min-height:44px;padding:8px 16px}
+.auth p:empty{display:none}.auth .brand{width:100%}.auth input:not([type=checkbox]){width:100%}.auth .check input{width:20px}
+/* Intrinsic sizing applies to every page and modal, including long user-entered names. */
+.columns{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+.main,.page,.columns>*,.form-grid>*,.settings-group,.dialog-body,.auth>*{min-width:0}
+.page-head,.section-head,.statusline,.form-actions,.list-actions{flex-wrap:wrap}
+.page-head h2,.section-head h3,.dialog-title h3,.setting-label,.setting-meta,.row small,.note,.errorbox,p{overflow-wrap:anywhere}
+.row{min-width:0}.row .amount{max-width:48%;white-space:normal;overflow-wrap:anywhere}
+.stat b,.stat small,.balance strong,.summary strong,.summary .num{white-space:normal;overflow-wrap:anywhere}
+.stat b{font-size:clamp(16px,3.9vw,21px)}.balance>div,.summary>div{min-width:0}.balance strong{max-width:60%;text-align:end}
+.donut{width:min(224px,100%);height:auto;aspect-ratio:1}.donut-center strong{font-size:clamp(20px,6.4vw,29px);max-width:75%;text-align:center;white-space:normal;overflow-wrap:anywhere}
+button{max-width:100%;white-space:normal;overflow-wrap:anywhere}
+.form-actions>*{min-width:0;flex:1 1 130px}
+.form-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+input[type=date],input[type=file],select{max-width:100%;min-width:0}input[type=file]{font-size:14px;padding:9px 7px}
+.check{min-height:44px}.check input{flex:none}
+dialog{width:min(520px,calc(100vw - 24px));max-width:calc(100vw - 24px);max-height:calc(100dvh - 24px);margin:auto;scroll-padding-top:80px}
+dialog header{gap:10px;align-items:flex-start;isolation:isolate}dialog header>.iconbutton{flex:none}.dialog-title{min-width:0;align-items:flex-start}.dialog-title .iconbutton{flex:none}
+dialog summary{min-height:44px;cursor:pointer;padding:10px 12px;border:1px solid #deded5;border-radius:10px;background:#f7f7f2;overflow-wrap:anywhere}
+.setting-button{gap:8px}.setting-label{min-width:0}.setting-meta{white-space:normal;text-align:end;max-width:34%}
+#toast{width:max-content;max-width:min(520px,calc(100vw - 24px));overflow-wrap:anywhere;text-align:center}
+@media(min-width:760px){.donut{width:min(250px,100%)}.auth{padding:40px}.auth .brand{margin-bottom:2px}}
+@media(max-width:759px){.columns{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:520px){html:has(.auth),body:has(.auth){background:#fff}#root:has(>.auth){padding:24px 20px}.auth{border:0;border-radius:0;padding:20px 4px;gap:20px}dialog .dialog-body{padding:0 18px 20px}dialog header{padding:14px 18px 10px}}
+@media(max-width:379px){.form-grid{grid-template-columns:minmax(0,1fr)}.brand{gap:5px}.brand img{width:32px;height:32px}.brand-name{font-size:26px}.brand-name small{font-size:10px}.header-actions{gap:5px}.add{padding-inline:8px}.app-header{gap:6px}.planned-actions{gap:5px}.planned-actions button{font-size:12px;padding-inline:2px}.nav button{font-size:11px}.monthbar{gap:6px}}
+@media(max-height:500px){#root:has(>.auth){padding:16px}.auth{padding:24px;gap:14px}.app-header{padding-block:9px}.monthbar{padding-bottom:8px}.main{padding-top:10px}.nav{padding-top:5px;padding-bottom:5px}.nav button{min-height:48px;padding-block:5px}dialog{max-height:calc(100dvh - 16px)}dialog header{padding-top:10px;padding-bottom:8px}dialog .dialog-body{padding-bottom:16px}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+.auth{min-width:0}.recovery-key{min-width:0;max-width:100%;word-break:break-all}
