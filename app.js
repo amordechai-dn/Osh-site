@@ -1,9 +1,9 @@
-import * as M from './model.js?v=1.2.3';
-import * as V from './vault.js?v=1.2.3';
-import * as S from './sync.js?v=1.2.3';
-import {startUpdates} from './updates.js?v=1.2.3';
+import * as M from './model.js?v=1.2.4';
+import * as V from './vault.js?v=1.2.4';
+import * as S from './sync.js?v=1.2.4';
+import {startUpdates} from './updates.js?v=1.2.4';
 const root=document.querySelector('#root'),modal=document.querySelector('#modal');
-let db=null,key=null,raw=null,sessionPin=null,month=M.monthNow(),view='overview',planMode='month',saving=Promise.resolve(),syncing=false,autoTimer=null,hiddenAt=0,lockTimer=null,lastFocus=null,uiEpoch=0;
+let db=null,key=null,raw=null,sessionPin=null,month=M.monthNow(),view='overview',planMode='month',saving=Promise.resolve(),syncing=false,autoTimer=null,lastFocus=null,uiEpoch=0;
 const labels={overview:'סקירה',plan:'תכנון',income:'הכנסות',expenses:'הוצאות',savings:'חסכונות'},singular={income:'הכנסה',expenses:'הוצאה',savings:'הפקדה'};
 const paths={plus:'M12 5v14M5 12h14',x:'M6 6l12 12M18 6 6 18',overview:'m3 10 9-7 9 7v10H3ZM9 20v-7h6v7',plan:'M5 5h14v16H5ZM8 2v6M16 2v6M5 10h14',income:'M3 6h18v14H3ZM3 10h18M16 14h3',expenses:'M5 7h14l2 13H3ZM8 8V5a4 4 0 0 1 8 0v3',savings:'m3 8 9-5 9 5ZM4 9h16M6 10v8M12 10v8M18 10v8M3 21h18',settings:'M4 6h16M4 12h16M4 18h16M8 3v6M16 9v6M8 15v6',left:'m14 6-6 6 6 6',right:'m10 6 6 6-6 6',down:'m6 9 6 6 6-6',check:'m5 12 4 4 10-10',lock:'M5 10h14v11H5ZM8 10V6a4 4 0 0 1 8 0v4',chart:'M4 3v18h17M8 17v-6M13 17V7M18 17V4'};
 const icon=n=>`<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="${paths[n]||paths.plan}"/></svg>`;
@@ -117,7 +117,7 @@ if(a==='check-updates'){await checkUpdates();toast('בדיקת העדכונים 
 if(a==='reset-demo')ask('מחיקת כספת ההדגמה','הנתונים לדוגמה יימחקו מהמכשיר.',async()=>{localStorage.removeItem('osh.vault.v1');localStorage.removeItem('osh.attempts.v1');await lock()});
 }
 document.addEventListener('click',e=>{const b=e.target.closest('button[data-action]');if(!b||b.disabled)return;if(['accept','choose-local','choose-remote'].includes(b.dataset.action))return;dispatch(b).catch(err)});
-document.addEventListener('visibilitychange',()=>{if(document.hidden){hiddenAt=Date.now();lockTimer=setTimeout(()=>{if(db)lock()},60000)}else{clearTimeout(lockTimer);if(db&&hiddenAt&&Date.now()-hiddenAt>=60000)lock();else if(db){refreshRates();if(db.connection)sync().catch(err)}hiddenAt=0}});
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&db){refreshRates();if(db.connection)sync().catch(err)}});
 window.addEventListener('online',()=>{if(db){refreshRates();sync().catch(err)}});
 window.addEventListener('storage',e=>{if(e.key==='osh.vault.v1'&&db){lock();toast('הכספת עודכנה בחלון אחר. יש לפתוח אותה מחדש')}});
 window.addEventListener('pageshow',e=>{if(e.persisted&&!key)auth()});
