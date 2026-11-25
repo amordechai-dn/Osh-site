@@ -1,6 +1,7 @@
-import * as M from './model.js?v=1.2.1';
-import * as V from './vault.js?v=1.2.1';
-import * as S from './sync.js?v=1.2.1';
+import * as M from './model.js?v=1.2.2';
+import * as V from './vault.js?v=1.2.2';
+import * as S from './sync.js?v=1.2.2';
+import {startUpdates} from './updates.js?v=1.2.2';
 const root=document.querySelector('#root'),modal=document.querySelector('#modal');
 let db=null,key=null,raw=null,sessionPin=null,month=M.monthNow(),view='overview',planMode='month',saving=Promise.resolve(),syncing=false,autoTimer=null,hiddenAt=0,lockTimer=null,lastFocus=null,uiEpoch=0;
 const labels={overview:'סקירה',plan:'תכנון',income:'הכנסות',expenses:'הוצאות',savings:'חסכונות'},singular={income:'הכנסה',expenses:'הוצאה',savings:'הפקדה'};
@@ -111,12 +112,16 @@ window.addEventListener('online',()=>{if(db){refreshRates();sync().catch(err)}})
 window.addEventListener('storage',e=>{if(e.key==='osh.vault.v1'&&db){lock();toast('הכספת עודכנה בחלון אחר. יש לפתוח אותה מחדש')}});
 window.addEventListener('pageshow',e=>{if(e.persisted&&!key)auth()});
 window.addEventListener('pagehide',()=>{key=null;raw=null;db=null});
-let swRegistration,lastInput=0,updating=false;
+let lastInput=0;
 function visibleSync(){if(!document.hidden&&!modal.open&&Date.now()-lastInput>3000)sync().catch(err)}
 setInterval(visibleSync,20000);window.addEventListener('focus',visibleSync);
-const initiallyControlled=Boolean(navigator.serviceWorker?.controller);document.addEventListener('input',()=>lastInput=Date.now());
-async function checkUpdates(){if(!swRegistration||!navigator.onLine)return;await swRegistration.update();if(swRegistration.waiting&&!modal.open&&Date.now()-lastInput>5000&&!syncing){await saving;swRegistration.waiting.postMessage('ACTIVATE')}}
-if('serviceWorker'in navigator){navigator.serviceWorker.register('./sw.js').then(r=>{swRegistration=r;r.addEventListener('updatefound',()=>{const sw=r.installing;sw?.addEventListener('statechange',()=>{if(sw.state==='installed'&&navigator.serviceWorker.controller)checkUpdates().catch(()=>{})})})}).catch(()=>{});navigator.serviceWorker.addEventListener('controllerchange',()=>{if(updating||!initiallyControlled)return;updating=true;location.reload()});setInterval(()=>checkUpdates().catch(()=>{}),60000)}
+document.addEventListener('input',()=>lastInput=Date.now());
+const checkUpdates=startUpdates({version:M.VERSION,
+  isSafe:()=>!modal.open&&!syncing&&!document.querySelector('button:disabled')&&
+    ![...document.querySelectorAll('#auth-form input')].some(input=>input.value)&&
+    !document.activeElement?.matches('input,textarea,select,[contenteditable=true]'),
+  save:()=>saving
+});
 if(!window.isSecureContext||!crypto.subtle){root.innerHTML='<div class="auth"><h1>נדרש חיבור מאובטח</h1><p>יש לפתוח את Osh בכתובת HTTPS או localhost כדי להצפין את הנתונים.</p></div>'}else{try{auth()}catch(e){root.innerHTML='<div class="auth"><h1>לא ניתן לפתוח את הכספת</h1><p>האחסון המקומי אינו זמין או שהנתונים פגומים. יש לשמור עותק של הנתונים ולשחזר מגיבוי.</p></div>';console.error(e)}}
 
 function importDeviceForm(){sheet('פתיחת כספת קיימת',`<form><p class="note">בחרו קובץ העברה והזינו את הקוד הקיים. חיבור הגיבוי והביומטריה מוגדרים מחדש במכשיר הזה.</p>${V.read()?'<p class="note warning">פתיחה תחליף את הכספת הקיימת במכשיר הזה. יש לייצא אותה קודם אם צריך לשמור אותה.</p>':''}<label>קובץ העברה מוצפן<input type="file" name="file" accept=".json,application/json" required></label><label>קוד הגישה הקיים<input name="pin" type="password" inputmode="numeric" minlength="4" maxlength="32" required autocomplete="current-password"></label><button type="submit" class="primary wide">פתיחת הכספת</button></form>`);bindForm(async f=>{const file=f.get('file');if(!file?.size||file.size>15000000)throw Error('יש לבחור קובץ תקין בגודל עד 15MB');const source=JSON.parse(await file.text()),session=await V.importDevice(source,f.get('pin'));close();await activate(session);toast('הכספת נפתחה עם הפרופיל והקוד הקיימים')})}
