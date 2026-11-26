@@ -1,4 +1,4 @@
-import {validate} from './model.js?v=1.8.4';
+import {validate} from './model.js?v=1.8.5';
 const enc=new TextEncoder(),dec=new TextDecoder();
 const SLOT='osh.vault.v1',ATTEMPTS='osh.attempts.v1';
 export const b64=b=>{const bytes=new Uint8Array(b);let text='';for(let i=0;i<bytes.length;i+=16384)text+=String.fromCharCode(...bytes.subarray(i,i+16384));return btoa(text)};

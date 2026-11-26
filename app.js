@@ -1,9 +1,9 @@
-import * as M from './model.js?v=1.8.4';
-import * as V from './vault.js?v=1.8.4';
-import * as S from './sync.js?v=1.8.4';
-import {rememberSession,restoreSession,forgetSession} from './session.js?v=1.8.4';
-import {seedDefaults,hasUserContent,findPlace,normalizeName,categoryGroup,expenseGroupLabels} from './defaults.js?v=1.8.4';
-import {startUpdates} from './updates.js?v=1.8.4';
+import * as M from './model.js?v=1.8.5';
+import * as V from './vault.js?v=1.8.5';
+import * as S from './sync.js?v=1.8.5';
+import {rememberSession,restoreSession,forgetSession} from './session.js?v=1.8.5';
+import {seedDefaults,hasUserContent,findPlace,normalizeName,categoryGroup,expenseGroupLabels} from './defaults.js?v=1.8.5';
+import {startUpdates} from './updates.js?v=1.8.5';
 const root=document.querySelector('#root'),modal=document.querySelector('#modal');
 let db=null,key=null,raw=null,sessionPin=null,month=M.monthNow(),view='overview',saving=Promise.resolve(),syncing=false,syncHealth='idle',syncMessage='',autoTimer=null,lastFocus=null,uiEpoch=0;
 // Scroll belongs to the page and month that are currently rendered, not the
@@ -62,7 +62,7 @@ function categories(){
 function plannedRow(p,options={}){
  const status=p.status,day=M.dateFor(month,p.day).slice(-2),edit=options.editPlan===true?action('edit-plan',icon('edit'),`data-id="${p.id}" aria-label="עריכת התכנון" title="עריכת התכנון"`,'iconbutton'):'';
  const buttons=status==='pending'?`${action('quick-confirm','אישור',`data-id="${p.id}" aria-label="אישור מהיר"`,'primary')}${action('review-confirm','סכום אחר',`data-id="${p.id}" aria-label="עריכה ואישור"`)}${action('skip','דילוג',`data-id="${p.id}" aria-label="דילוג החודש"`)}`:`<span class="tag">${status==='paid'?'אושר':'דולג'}</span>${action(status==='paid'?'undo':'unskip',status==='paid'?'ביטול אישור':'החזרה',`data-id="${p.id}"`)}`;
- return `<div class="row planned"><span class="glyph">${icon(p.type)}</span><div class="grow"><b>${esc(p.name)}</b><small>${day}.${Number(month.slice(5))} · ${labels[p.type]}${p.category?' · '+esc(db.entities[p.category]?.name||''):''}${M.isRecurring(db,p)?' · חוזר בכל חודש':''}</small></div><span class="amount num">${money(p.amount)}</span><div class="planned-actions">${buttons}${edit}</div></div>`;
+ return `<div class="row planned"><span class="glyph">${icon(p.type)}</span><div class="grow"><b>${esc(p.name)}</b><small>${p.type==='expenses'?'':day+'.'+Number(month.slice(5))+' · '}${labels[p.type]}${p.category?' · '+esc(db.entities[p.category]?.name||''):''}${M.isRecurring(db,p)?' · חוזר בכל חודש':''}</small></div><span class="amount num">${money(p.amount)}</span><div class="planned-actions">${buttons}${edit}</div></div>`;
 }
 function expenseBudgetSummary(){
  const t=M.totals(db,month),over=Math.max(0,t.plannedSpecificExpenses-t.plannedExpenses);
@@ -70,7 +70,7 @@ function expenseBudgetSummary(){
 }
 function transactionRow(t){const amount=M.ils(t),cat=db.entities[t.category]?.name;return `<button class="row transaction" data-action="transaction" data-id="${t.id}"><span class="glyph">${icon(t.type)}</span><span class="grow"><b>${esc(t.name)}</b><small>${esc(cat||labels[t.type])} · ${new Date(t.date+'T12:00:00').toLocaleDateString('he-IL')}${t.estimated?' · שער משוער':''}${t.currency==='USD'?` · $${(t.amount/100).toLocaleString('en-US')}`:''}</small></span><span class="amount num ${t.type}">${t.refundOf?'−':''}${amount===null?'ממתין לשער':money(amount)}</span></button>`}
 function history(){const months=M.list(db,'month').map(x=>x.month).sort().slice(-6);if(months.length<2)return '';const data=months.map(m=>({month:m,...M.totals(db,m)})),max=Math.max(...data.flatMap(x=>[x.income,x.expenses,x.savings]),1);return `<div class="section-head"><h3>מבט על החודשים</h3></div><div class="legend">${[['הכנסות','#4d8060'],['הוצאות','#b45f5b'],['חסכונות','#927333']].map(([s,c])=>`<span><i class="dot" style="background:${c}"></i>${s}</span>`).join('')}</div><div class="history-chart" role="img" aria-label="השוואת הכנסות הוצאות וחסכונות בשקלים לפי חודש">${data.map(t=>`<div class="history-group"><div class="history-bars">${['income','expenses','savings'].map((k,i)=>`<i title="${labels[k]} ${money(t[k])}" style="height:${Math.max(0,t[k])/max*90}px;background:${['#4d8060','#b45f5b','#927333'][i]}"></i>`).join('')}</div><small>${t.month.slice(5)}/${t.month.slice(2,4)}</small></div>`).join('')}</div>`}
-function overview(){const t=M.totals(db,month),pending=M.list(db,'planned').filter(p=>p.month===month&&p.status==='pending').sort((a,b)=>a.day-b.day);if(!M.list(db,'category').length&&!M.list(db,'template').length&&!M.list(db,'transaction').length)return heading('התמונה החודשית')+empty('מתחילים את החודש שלך','הוסיפו קטגוריות ותכנית חודשית.',action('go-plan','לתכנון החודש','','gold'));return heading('התמונה החודשית')+`<div class="columns"><div>${donut(t.income,t.expenses,t.savings)}${stats(t)}${expenseGroupSummary()}<div class="balance"><div>יתרה<small>לאחר התחייבויות</small></div><strong class="num ${color(t.available)}">${money(t.available)}</strong></div>${t.remain!==t.available?`<p class="small muted">יתרה בפועל: <span class="num ${color(t.remain)}">${money(t.remain)}</span></p>`:''}${t.pending||t.estimated?`<div class="note warning">${t.pending?`${t.pending} תנועות בדולר ממתינות לשער ואינן כלולות בסכומים. `:''}${t.estimated?`${t.estimated} תנועות מחושבות בשער משוער. נעדכן בחיבור לרשת.`:''}</div>`:''}${history()}</div><div><div class="section-head"><h3>מה עוד מתוכנן?</h3>${action('go-plan','לתכנון החודש')}</div>${pending.length?pending.map(plannedRow).join(''):'<p class="note">הכול אושר לחודש הזה.</p>'}<div class="section-head"><h3>הוצאות לפי קטגוריה</h3></div>${categories()||'<p class="muted small">עדיין אין הוצאות לפי קטגוריה.</p>'}</div></div>`}
+function overview(){const t=M.totals(db,month),pending=M.list(db,'planned').filter(p=>p.month===month&&p.status==='pending').sort((a,b)=>(a.type==='expenses'?32:a.day)-(b.type==='expenses'?32:b.day));if(!M.list(db,'category').length&&!M.list(db,'template').length&&!M.list(db,'transaction').length)return heading('התמונה החודשית')+empty('מתחילים את החודש שלך','הוסיפו קטגוריות ותכנית חודשית.',action('go-plan','לתכנון החודש','','gold'));return heading('התמונה החודשית')+`<div class="columns"><div>${donut(t.income,t.expenses,t.savings)}${stats(t)}${expenseGroupSummary()}<div class="balance"><div>יתרה<small>לאחר התחייבויות</small></div><strong class="num ${color(t.available)}">${money(t.available)}</strong></div>${t.remain!==t.available?`<p class="small muted">יתרה בפועל: <span class="num ${color(t.remain)}">${money(t.remain)}</span></p>`:''}${t.pending||t.estimated?`<div class="note warning">${t.pending?`${t.pending} תנועות בדולר ממתינות לשער ואינן כלולות בסכומים. `:''}${t.estimated?`${t.estimated} תנועות מחושבות בשער משוער. נעדכן בחיבור לרשת.`:''}</div>`:''}${history()}</div><div><div class="section-head"><h3>מה עוד מתוכנן?</h3>${action('go-plan','לתכנון החודש')}</div>${pending.length?pending.map(plannedRow).join(''):'<p class="note">הכול אושר לחודש הזה.</p>'}<div class="section-head"><h3>הוצאות לפי קטגוריה</h3></div>${categories()||'<p class="muted small">עדיין אין הוצאות לפי קטגוריה.</p>'}</div></div>`}
 function plan(){
  const t=M.totals(db,month);
  const upcoming=month===M.monthNow()?M.list(db,'template').flatMap(t=>{const next=M.nextRecurringMonth(t,month);return next&&!Object.values(db.entities).some(p=>p.kind==='planned'&&p.month===month&&p.template===t.id)?[{...M.templateAt(t,next),id:t.id,start:next}]:[]}):[];
@@ -98,10 +98,12 @@ function plannedForm(id,type='expenses'){
  const original=db.entities[id]||{},p=original.kind==='template'?{...original,...M.templateAt(original,M.nextRecurringMonth(original,month)||month)}:original,categories=M.list(db,'category'),wasRecurring=id&&M.isRecurring(db,p);
  type=p.type||type;
  if(type==='expenses'&&!categories.length&&!id){categoryForm();return}
- sheet(id?'עריכת התכנון':'הוספה לתכנון',`<form><label>סוג<select name="type">${['income','expenses','savings'].map(t=>`<option value="${t}" ${type===t?'selected':''}>${labels[t]}</option>`).join('')}</select></label><label>שם<input name="name" required maxlength="120" value="${esc(p.name)}" placeholder="משכורת, שכר דירה או חשבון השקעות"></label><div class="form-grid"><label>סכום בשקלים${numberInput('amount',p.amount?p.amount/100:'')}</label><label>יום בחודש<input name="day" type="number" min="1" max="31" required value="${p.day||1}"></label></div><div data-expense-fields ${type==='expenses'?'':'hidden'}><label>קטגוריה<select name="category">${options(categories,p.category,'בחירת קטגוריה')}</select></label><label>מקום (רשות)<input name="place" maxlength="120" value="${esc(p.place)}" list="place-names"><datalist id="place-names">${M.list(db,'place').map(x=>`<option value="${esc(x.name)}">`).join('')}</datalist></label></div><label class="check recurrence-switch"><input type="checkbox" role="switch" name="recurring" ${wasRecurring?'checked':''}>חוזר בכל חודש</label><div data-plan-scope ${wasRecurring?'':'hidden'}>${planScope()}</div><p class="note" data-repeat-note></p><button class="primary wide">שמירת הפריט</button>${id?action('delete-plan','מחיקת הפריט',`type="button" data-id="${id}"`,'danger wide'):''}</form>`);
+ sheet(id?'עריכת התכנון':'הוספה לתכנון',`<form><label>סוג<select name="type">${['income','expenses','savings'].map(t=>`<option value="${t}" ${type===t?'selected':''}>${labels[t]}</option>`).join('')}</select></label><label>שם<input name="name" required maxlength="120" value="${esc(p.name)}" placeholder="משכורת, שכר דירה או חשבון השקעות"></label><div class="form-grid"><label>סכום בשקלים${numberInput('amount',p.amount?p.amount/100:'')}</label><label data-plan-day>יום בחודש<input name="day" type="number" min="1" max="31" required value="${p.day||1}"></label></div><div data-expense-fields ${type==='expenses'?'':'hidden'}><label>קטגוריה<select name="category">${options(categories,p.category,'בחירת קטגוריה')}</select></label><label>מקום (רשות)<input name="place" maxlength="120" value="${esc(p.place)}" list="place-names"><datalist id="place-names">${M.list(db,'place').map(x=>`<option value="${esc(x.name)}">`).join('')}</datalist></label></div><label class="check recurrence-switch"><input type="checkbox" role="switch" name="recurring" ${wasRecurring?'checked':''}>חוזר בכל חודש</label><div data-plan-scope ${wasRecurring?'':'hidden'}>${planScope()}</div><p class="note" data-repeat-note></p><button class="primary wide">שמירת הפריט</button>${id?action('delete-plan','מחיקת הפריט',`type="button" data-id="${id}"`,'danger wide'):''}</form>`);
  const form=modal.querySelector('form'),repeat=form.elements.recurring;
  const refresh=()=>{
-  form.querySelector('[data-expense-fields]').hidden=form.elements.type.value!=='expenses';
+  const expense=form.elements.type.value==='expenses';
+  form.querySelector('[data-expense-fields]').hidden=!expense;
+  form.querySelector('[data-plan-day]').hidden=expense;form.elements.day.disabled=expense;form.elements.day.required=!expense;
   form.querySelector('[data-plan-scope]').hidden=!wasRecurring||!repeat.checked;
   form.querySelector('[data-repeat-note]').textContent=!repeat.checked?(wasRecurring?'יישמר בחודש הזה. החזרה החודשית תיפסק מהחודש הבא.':'יישמר רק ב'+monthLabel(month)+'.'):wasRecurring?'בחרו אם השינוי חל רק החודש או גם בחודשים הבאים.':'יופיע ב'+monthLabel(month)+' ובכל חודש אחריו.';
  };
@@ -110,7 +112,7 @@ function plannedForm(id,type='expenses'){
  bindForm(async f=>{
   const type=f.get('type'),category=type==='expenses'?f.get('category'):'';
   if(type==='expenses'&&!category)throw Error('יש לבחור קטגוריה להוצאה');
-  M.savePlan(db,month,{id,type,name:f.get('name').trim(),amount:cents(f.get('amount')),day:Number(f.get('day')),category,place:type==='expenses'?f.get('place').trim():'',recurring:f.has('recurring'),scope:f.get('scope')||'month'});
+  M.savePlan(db,month,{id,type,name:f.get('name').trim(),amount:cents(f.get('amount')),day:type==='expenses'?null:Number(f.get('day')),category,place:type==='expenses'?f.get('place').trim():'',recurring:f.has('recurring'),scope:f.get('scope')||'month'});
   close();await changed('התכנון נשמר');
  });
 }
@@ -197,7 +199,7 @@ if(a==='edit-plan')plannedForm(id);
 if(a==='go-plan'){view='plan';render()}
 if(a==='setup')setup();
 if(a==='setup-default'){close();view='plan';render()}
-if(a==='quick-confirm'){const p=db.entities[id];M.confirm(db,id,{date:month===M.monthNow()?M.today():M.dateFor(month,p.day)});await changed('אושר בסכום המתוכנן')}
+if(a==='quick-confirm'){const p=db.entities[id];M.confirm(db,id,{date:month===M.monthNow()?M.today():M.confirmationDate(p)});await changed('אושר בסכום המתוכנן')}
 if(a==='review-confirm')await transactionForm(null,null,id);
 if(a==='skip'||a==='unskip'){const p=db.entities[id];M.put(db,{...p,status:a==='skip'?'skipped':'pending'});await changed(a==='skip'?'דולג בחודש הזה':'הפריט חזר לתכנון')}
 if(a==='undo')ask('ביטול אישור','התנועה שנוצרה מהאישור תימחק והפריט יחזור להמתין לאישור.',async()=>{const p=db.entities[id];if(p.transaction)M.deleteTransaction(db,p.transaction);else M.put(db,{...p,status:'pending'});await changed('האישור בוטל')});

@@ -1,5 +1,5 @@
-import {categoryGroup} from './defaults.js?v=1.8.4';
-export const VERSION='1.8.4';
+import {categoryGroup} from './defaults.js?v=1.8.5';
+export const VERSION='1.8.5';
 export const uid=()=>crypto.randomUUID();
 export const today=()=>{const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`};
 export const monthNow=()=>today().slice(0,7);
@@ -11,7 +11,7 @@ export function remove(db,id){if(db.entities[id])put(db,{...db.entities[id],dele
 export function dateFor(month,day){const [y,m]=month.split('-').map(Number);return `${month}-${String(Math.min(Number(day)||1,new Date(y,m,0).getDate())).padStart(2,'0')}`}
 export function nextMonth(month,step=1){const [y,m]=month.split('-').map(Number),d=new Date(y,m-1+step,1);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`}
 const planFields=['type','name','amount','day','category','place'];
-const fieldsOf=p=>Object.fromEntries(planFields.map(k=>[k,p[k]??(k==='day'?1:'')]));
+const fieldsOf=p=>Object.fromEntries(planFields.map(k=>[k,k==='day'&&p.type==='expenses'?null:p[k]??(k==='day'?1:'')]));
 export function templateAt(t,month){
  if(!t||t.deleted||(t.start&&month<t.start))return null;
  const change=[...(t.changes||[])].filter(c=>c.from<=month).sort((a,b)=>a.from.localeCompare(b.from)).at(-1);
@@ -81,7 +81,7 @@ function changeSchedule(db,t,from,values,active=true){
 }
 export function savePlan(db,month,input){
  const values=fieldsOf(input);
- if(!/^\d{4}-\d{2}$/.test(month)||!['income','expenses','savings'].includes(values.type)||!values.name.trim()||!Number.isSafeInteger(values.amount)||values.amount<=0||!Number.isInteger(values.day)||values.day<1||values.day>31)throw Error('יש לבדוק את פרטי התכנון');
+ if(!/^\d{4}-\d{2}$/.test(month)||!['income','expenses','savings'].includes(values.type)||!values.name.trim()||!Number.isSafeInteger(values.amount)||values.amount<=0||(values.type!=='expenses'&&(!Number.isInteger(values.day)||values.day<1||values.day>31)))throw Error('יש לבדוק את פרטי התכנון');
  const old=db.entities[input.id],template=old?.kind==='template'?old:db.entities[old?.template];
  const existing=old?.kind==='planned'?old:old?.kind==='template'?Object.values(db.entities).find(p=>p.kind==='planned'&&p.month===month&&p.template===old.id):null;
  const p={...existing,kind:'planned',month,...values,status:existing?.status||'pending',deleted:false};
@@ -120,7 +120,8 @@ export function spendingGroups(db,month){
 }
 export function totals(db,month){let income=0,expenses=0,savings=0,pending=0,estimated=0;for(const t of transactions(db,month)){const n=ils(t);if(n===null){pending++;continue}if(t.estimated)estimated++;if(t.type==='income')income+=n;if(t.type==='expenses')expenses+=t.refundOf?-n:n;if(t.type==='savings')savings+=n}const plans=list(db,'planned').filter(x=>x.month===month),m=list(db,'month').find(x=>x.month===month);let commitments=plans.filter(x=>x.status==='pending'&&x.type!=='income').reduce((s,x)=>s+x.amount,0);return {income,expenses,savings,pending,estimated,remain:income-expenses-savings,available:income-expenses-savings-commitments,commitments,plannedIncome:plans.filter(x=>x.status!=='skipped'&&x.type==='income').reduce((s,x)=>s+x.amount,0),plannedSavings:plans.filter(x=>x.status!=='skipped'&&x.type==='savings').reduce((s,x)=>s+x.amount,0),plannedExpenses:monthlyExpenseBudget(db,month),expenseRemaining:monthlyExpenseBudget(db,month)-expenses,plannedSpecificExpenses:plans.filter(p=>p.type==='expenses'&&p.status!=='skipped').reduce((sum,p)=>sum+p.amount,0)}}
 export function spent(db,month,category){return transactions(db,month).filter(t=>t.type==='expenses'&&t.category===category).reduce((s,t)=>s+(ils(t)||0)*(t.refundOf?-1:1),0)}
-export function confirm(db,id,changes={}){const p=db.entities[id];if(!p||p.deleted||p.status!=='pending')throw Error('הפריט כבר אושר או דולג');const t=put(db,{kind:'transaction',type:p.type,name:p.name,category:p.category,place:p.place,amount:p.amount,currency:'ILS',date:dateFor(p.month,p.day),...changes,id:'transaction:'+p.id,planned:p.id});put(db,{...p,status:'paid',transaction:t.id});return t}
+export function confirmationDate(p){return p.type==='expenses'?dateFor(p.month,Number(today().slice(-2))):dateFor(p.month,p.day)}
+export function confirm(db,id,changes={}){const p=db.entities[id];if(!p||p.deleted||p.status!=='pending')throw Error('הפריט כבר אושר או דולג');const t=put(db,{kind:'transaction',type:p.type,name:p.name,category:p.category,place:p.place,amount:p.amount,currency:'ILS',date:confirmationDate(p),...changes,id:'transaction:'+p.id,planned:p.id});put(db,{...p,status:'paid',transaction:t.id});return t}
 export function deleteTransaction(db,id){const t=db.entities[id];if(list(db,'transaction').some(x=>x.refundOf===id))throw Error('יש למחוק תחילה את ההחזרים המקושרים');remove(db,id);if(t?.planned&&db.entities[t.planned])put(db,{...db.entities[t.planned],status:'pending',transaction:null})}
 export function refund(db,id,amount,date){const original=db.entities[id];if(!original||original.type!=='expenses'||original.refundOf)throw Error('אפשר להחזיר הוצאה בלבד');const returned=list(db,'transaction').filter(t=>t.refundOf===id).reduce((s,t)=>s+t.amount,0);if(!(amount>0)||returned+amount>original.amount)throw Error('ההחזר גדול מיתרת ההוצאה');return put(db,{kind:'transaction',type:'expenses',name:`החזר · ${original.name}`,category:original.category,place:original.place,amount,currency:original.currency,date,refundOf:id})}
 export function validate(db){if(!db||db.schema!==1||typeof db.id!=='string'||!db.entities||typeof db.entities!=='object'||Array.isArray(db.entities)||Object.keys(db.entities).length>100000)throw Error('קובץ נתונים לא תקין');for(const [id,e] of Object.entries(db.entities)){if(e.id!==id||typeof e.kind!=='string'||(e.amount!==undefined&&(!Number.isSafeInteger(e.amount)||e.amount<0)))throw Error('רשומה לא תקינה בקובץ');}return db}
