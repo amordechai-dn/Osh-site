@@ -1,4 +1,4 @@
-export const VERSION='1.6.0';
+export const VERSION='1.7.0';
 export const uid=()=>crypto.randomUUID();
 export const today=()=>{const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`};
 export const monthNow=()=>today().slice(0,7);
@@ -23,9 +23,37 @@ function materialize(db,t,month){
  if(existing&&!existing.recurrenceStopped)return existing;
  return put(db,{id:existing?.id||'planned:'+month+':'+t.id,kind:'planned',month,...fieldsOf(effective),template:t.id,status:'pending',deleted:false,recurrenceStopped:false});
 }
+function expenseRuleEntryAt(db,month){
+ const rule=db.entities['expense-budget:monthly'];
+ if(!rule||rule.deleted)return null;
+ return [...(rule.changes||[])].filter(c=>c.from<=month).sort((a,b)=>a.from.localeCompare(b.from)).at(-1)??null;
+}
+const expenseRuleAt=(db,month)=>expenseRuleEntryAt(db,month)?.amount??null;
+export function monthlyExpenseBudget(db,month){
+ const m=list(db,'month').find(m=>m.month===month);
+ return m?.expenseBudget??expenseRuleAt(db,month)??(m?.budgets||list(db,'category').map(c=>({amount:c.budget||0}))).reduce((sum,b)=>sum+b.amount,0);
+}
+export function migrateExpenseBudgets(db){
+ for(const m of list(db,'month'))if(m.expenseBudget===undefined){
+  const rule=expenseRuleEntryAt(db,m.month),amount=rule&&rule.from!=='0000-01'?rule.amount:(m.budgets||[]).reduce((sum,b)=>sum+b.amount,0);
+  db.entities[m.id]={...m,expenseBudget:amount,expenseBudgetOverride:false,rev:(m.rev||m.id)+':expense-total-v1'};
+ }
+ const amount=list(db,'category').reduce((sum,c)=>sum+(c.budget||0),0);
+ if(!db.entities['expense-budget:monthly']&&amount>0)db.entities['expense-budget:monthly']={id:'expense-budget:monthly',kind:'expense-budget',changes:[{from:'0000-01',amount}],rev:'legacy-expense-budget:'+amount,updatedAt:'2026-11-26T00:00:00.000Z'};
+}
+export function setExpenseBudget(db,month,amount,scope='month'){
+ if(!Number.isSafeInteger(amount)||amount<0||amount>1e11)throw Error('יש להזין תקציב תקין');
+ const m=ensureMonth(db,month),future=scope==='future';
+ if(future){
+  const old=db.entities['expense-budget:monthly'];
+  put(db,{...old,id:'expense-budget:monthly',kind:'expense-budget',changes:[...(old?.changes||[]).filter(c=>c.from<month),{from:month,amount}]});
+  for(const later of list(db,'month').filter(m=>m.month>month&&!m.expenseBudgetOverride))put(db,{...later,expenseBudget:amount});
+ }
+ put(db,{...m,expenseBudget:amount,expenseBudgetOverride:!future});
+}
 export function ensureMonth(db,month){
  let m=list(db,'month').find(x=>x.month===month);
- if(!m)m=put(db,{id:'month:'+month,kind:'month',month,budgets:list(db,'category').map(c=>({category:c.id,amount:c.budget||0}))});
+ if(!m)m=put(db,{id:'month:'+month,kind:'month',month,budgets:list(db,'category').map(c=>({category:c.id,amount:c.budget||0})),expenseBudget:monthlyExpenseBudget(db,month),expenseBudgetOverride:false});
  else if(month<monthNow())return m;
  for(const t of list(db,'template'))materialize(db,t,month);
  return m;
@@ -79,7 +107,7 @@ export function deletePlan(db,month,id,scope='month'){
 export function updateTemplate(db,t,current=monthNow()){const saved=put(db,{...t,kind:'template',start:t.start||nextMonth(current)});for(const m of list(db,'month').filter(x=>x.month>current)){let p=list(db,'planned').find(x=>x.month===m.month&&x.template===saved.id);if(p&&p.status==='pending')put(db,{...p,type:t.type,name:t.name,category:t.category||'',place:t.place||'',amount:t.amount,day:t.day||1});else if(!p&&!t.deleted&&m.month>=saved.start)put(db,{id:'planned:'+m.month+':'+saved.id,kind:'planned',month:m.month,type:t.type,name:t.name,category:t.category||'',place:t.place||'',amount:t.amount,day:t.day||1,template:saved.id,status:'pending'});}return saved}
 export function ils(t){if(t.currency==='USD')return t.rate?Math.round(t.amount*t.rate):null;return t.amount}
 export function transactions(db,month){return list(db,'transaction').filter(x=>x.date.slice(0,7)===month)}
-export function totals(db,month){let income=0,expenses=0,savings=0,pending=0,estimated=0;for(const t of transactions(db,month)){const n=ils(t);if(n===null){pending++;continue}if(t.estimated)estimated++;if(t.type==='income')income+=n;if(t.type==='expenses')expenses+=t.refundOf?-n:n;if(t.type==='savings')savings+=n}const plans=list(db,'planned').filter(x=>x.month===month),m=list(db,'month').find(x=>x.month===month);let commitments=plans.filter(x=>x.status==='pending'&&x.type!=='income').reduce((s,x)=>s+x.amount,0);return {income,expenses,savings,pending,estimated,remain:income-expenses-savings,available:income-expenses-savings-commitments,commitments,plannedIncome:plans.filter(x=>x.status!=='skipped'&&x.type==='income').reduce((s,x)=>s+x.amount,0),plannedSavings:plans.filter(x=>x.status!=='skipped'&&x.type==='savings').reduce((s,x)=>s+x.amount,0),plannedExpenses:(m?.budgets||[]).reduce((s,x)=>s+x.amount,0)}}
+export function totals(db,month){let income=0,expenses=0,savings=0,pending=0,estimated=0;for(const t of transactions(db,month)){const n=ils(t);if(n===null){pending++;continue}if(t.estimated)estimated++;if(t.type==='income')income+=n;if(t.type==='expenses')expenses+=t.refundOf?-n:n;if(t.type==='savings')savings+=n}const plans=list(db,'planned').filter(x=>x.month===month),m=list(db,'month').find(x=>x.month===month);let commitments=plans.filter(x=>x.status==='pending'&&x.type!=='income').reduce((s,x)=>s+x.amount,0);return {income,expenses,savings,pending,estimated,remain:income-expenses-savings,available:income-expenses-savings-commitments,commitments,plannedIncome:plans.filter(x=>x.status!=='skipped'&&x.type==='income').reduce((s,x)=>s+x.amount,0),plannedSavings:plans.filter(x=>x.status!=='skipped'&&x.type==='savings').reduce((s,x)=>s+x.amount,0),plannedExpenses:monthlyExpenseBudget(db,month),expenseRemaining:monthlyExpenseBudget(db,month)-expenses,plannedSpecificExpenses:plans.filter(p=>p.type==='expenses'&&p.status!=='skipped').reduce((sum,p)=>sum+p.amount,0)}}
 export function spent(db,month,category){return transactions(db,month).filter(t=>t.type==='expenses'&&t.category===category).reduce((s,t)=>s+(ils(t)||0)*(t.refundOf?-1:1),0)}
 export function confirm(db,id,changes={}){const p=db.entities[id];if(!p||p.deleted||p.status!=='pending')throw Error('הפריט כבר אושר או דולג');const t=put(db,{kind:'transaction',type:p.type,name:p.name,category:p.category,place:p.place,amount:p.amount,currency:'ILS',date:dateFor(p.month,p.day),...changes,id:'transaction:'+p.id,planned:p.id});put(db,{...p,status:'paid',transaction:t.id});return t}
 export function deleteTransaction(db,id){const t=db.entities[id];if(list(db,'transaction').some(x=>x.refundOf===id))throw Error('יש למחוק תחילה את ההחזרים המקושרים');remove(db,id);if(t?.planned&&db.entities[t.planned])put(db,{...db.entities[t.planned],status:'pending',transaction:null})}

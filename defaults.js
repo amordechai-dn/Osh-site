@@ -54,4 +54,4 @@ export function seedDefaults(db){
 export function hasUserContent(db){return Object.values(db.entities).some(e=>
   ['transaction','template','planned','category','place'].includes(e.kind)&&
     !(e.id.startsWith('default:')&&e.rev===REV)||
-  e.kind==='month'&&(e.budgets||[]).some(b=>b.amount>0))}
+  e.kind==='expense-budget'||e.kind==='month'&&(e.expenseBudget>0||e.expenseBudgetOverride||(e.budgets||[]).some(b=>b.amount>0)))}
