@@ -1,5 +1,5 @@
-import {copy,merge,validate} from './model.js?v=1.8.1';
-import {b64,open,accountBackup} from './vault.js?v=1.8.1';
+import {copy,merge,validate} from './model.js?v=1.8.2';
+import {b64,open,accountBackup} from './vault.js?v=1.8.2';
 export async function github(config,path,options={}){if(!/^[\w.-]+\/[\w.-]+$/.test(config.repo))throw Error('יש להזין מאגר בתבנית owner/repository');const url=`https://api.github.com/repos/${config.repo}${path}`;const r=await fetch(url,{...options,headers:{Accept:'application/vnd.github+json',Authorization:`Bearer ${config.token}`,'X-GitHub-Api-Version':'2022-11-28','Content-Type':'application/json',...options.headers},signal:AbortSignal.timeout(20000)});if(r.status===404&&path.startsWith('/contents/'))return null;if(!r.ok)throw Error(r.status===409||r.status===422?'הגיבוי השתנה במכשיר אחר. יש לסנכרן שוב':r.status===401||r.status===403?'אין הרשאה למאגר. יש לבדוק את החיבור ל־GitHub':`GitHub: ${r.status}`);return r.status===204?null:r.json()}
 export async function verify(config){const repo=await github(config,'');if(!repo.private)throw Error('לנתונים פיננסיים נדרש מאגר פרטי');return repo}
 export async function readRemote(config){const file=await github(config,'/contents/osh-vault.json');if(!file)return null;const raw=atob(file.content.replace(/\s/g,''));return {sha:file.sha,box:JSON.parse(new TextDecoder().decode(Uint8Array.from(raw,c=>c.charCodeAt(0))))}}
