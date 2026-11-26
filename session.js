@@ -1,4 +1,4 @@
-import {read,attempts,seal,open,b64,unb64} from './vault.js?v=1.8.3';
+import {read,attempts,seal,open,b64,unb64} from './vault.js?v=1.8.4';
 const EPOCH='osh.session.epoch';
 const epoch=()=>localStorage.getItem(EPOCH)||'0';
 const fingerprint=meta=>JSON.stringify([meta?.id,meta?.salt,meta?.pinWrap?.body]);
