@@ -65,3 +65,33 @@ dialog summary{min-height:44px;cursor:pointer;padding:10px 12px;border:1px solid
 .planned{padding-block:10px;row-gap:8px}.planned-actions{display:flex;flex-wrap:wrap;align-items:center;gap:6px;flex-basis:100%}.planned-actions button{flex:0 0 auto;min-height:34px;padding:5px 10px;font-size:12px;border-radius:8px}.planned-actions .iconbutton{width:34px;padding:6px}.planned-actions .icon{width:16px;height:16px}.planned .glyph{width:32px;min-width:32px;height:32px}.expense-budget{border:1px solid #deded6;background:#f7f7f3;border-radius:12px;padding:14px;margin:8px 0 12px}.expense-budget-heading{display:flex;justify-content:space-between;align-items:center;gap:12px}.expense-budget-heading strong{display:block;font-size:26px;font-weight:500;margin-top:3px}.expense-budget-heading small{color:#6d6d65}.expense-budget-heading button{font-size:12px;min-height:36px}.expense-budget-totals{display:flex;flex-wrap:wrap;gap:8px 18px;margin-top:10px;font-size:13px;color:#6d6d65}.expense-budget-totals b{font-weight:500}.expense-budget>p{margin-top:10px}@media(max-width:759px),(pointer:coarse){.planned-actions button{min-height:44px}.planned-actions .iconbutton{width:44px}.expense-budget-heading button{min-height:44px}}
 
 .expense-groups{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:0 0 14px}.expense-group{min-width:0;border:1px solid #e5e5de;background:#fafaf7;border-radius:10px;padding:10px 12px}.expense-group span{display:block;font-size:13px;color:#73736e}.expense-group strong{display:block;font-size:19px;font-weight:500;margin-top:4px}
+
+/* Own the page offset; native scroll anchoring must not override restoration. */
+.main{overflow-anchor:none}
+/* Stable quick-entry shell across income, expenses and savings. */
+dialog.quick-entry[open]{display:flex;flex-direction:column;height:min(720px,calc(100dvh - 24px));overflow:hidden}
+dialog.quick-entry>header{flex-shrink:0;position:relative}
+dialog.quick-entry>.dialog-body{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;scroll-padding-top:12px}
+dialog.quick-entry form{min-height:100%;display:flex;flex-direction:column}
+dialog.quick-entry form>*{flex-shrink:0}
+dialog.quick-entry form>button[type=submit]{margin-top:auto}
+/* Consistent in-field chevrons with reserved room on the RTL trailing edge. */
+select{appearance:none;-webkit-appearance:none;min-width:0;max-width:100%;padding-inline:12px 38px;line-height:1.4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='m4 6 4 4 4-4' fill='none' stroke='%236b6b63' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:left 12px center;background-size:16px 16px}
+select[dir=ltr],[dir=ltr] select{background-position:right 12px center}
+input,textarea{line-height:1.4;max-width:100%}
+input[type=number]{appearance:textfield;-moz-appearance:textfield;direction:ltr;text-align:right}
+input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+input[type=date]{min-width:0}
+input[type=date]::-webkit-date-and-time-value{text-align:right;direction:ltr}
+input[type=date]::-webkit-datetime-edit,input[type=date]::-webkit-datetime-edit-fields-wrapper{padding:0}
+input[type=date]::-webkit-calendar-picker-indicator{margin:0;padding:2px;flex-shrink:0}
+label{min-width:0;line-height:1.45}.form-grid>label{justify-content:flex-end}
+.stat b,.expense-group strong,.balance strong,.summary strong,.summary p.num,.donut-center strong{min-width:0;max-width:100%}
+.balance strong{flex-shrink:1;max-width:70%}
+.expense-budget-heading>div{min-width:0;flex:1}.expense-budget-heading>button{flex-shrink:0}
+.amount{min-width:0;max-width:48%;flex-shrink:1}
+
+.stat{min-width:0}.donut-center strong{max-width:72%}.balance>div{min-width:0}.summary{gap:16px}.summary>div{min-width:0;flex:1}.monthbutton{min-width:0}
+
+.tabs button.selected,.tabs button.selected:hover:not(:disabled){background:#303030;border-color:#303030;color:#fff}
+dialog.quick-entry>.dialog-body{scroll-padding-bottom:24px}

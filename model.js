@@ -1,5 +1,5 @@
-import {categoryGroup} from './defaults.js?v=1.8.0';
-export const VERSION='1.8.0';
+import {categoryGroup} from './defaults.js?v=1.8.1';
+export const VERSION='1.8.1';
 export const uid=()=>crypto.randomUUID();
 export const today=()=>{const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`};
 export const monthNow=()=>today().slice(0,7);
