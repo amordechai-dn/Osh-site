@@ -1,4 +1,5 @@
-export const VERSION='1.7.0';
+import {categoryGroup} from './defaults.js?v=1.8.0';
+export const VERSION='1.8.0';
 export const uid=()=>crypto.randomUUID();
 export const today=()=>{const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`};
 export const monthNow=()=>today().slice(0,7);
@@ -107,6 +108,16 @@ export function deletePlan(db,month,id,scope='month'){
 export function updateTemplate(db,t,current=monthNow()){const saved=put(db,{...t,kind:'template',start:t.start||nextMonth(current)});for(const m of list(db,'month').filter(x=>x.month>current)){let p=list(db,'planned').find(x=>x.month===m.month&&x.template===saved.id);if(p&&p.status==='pending')put(db,{...p,type:t.type,name:t.name,category:t.category||'',place:t.place||'',amount:t.amount,day:t.day||1});else if(!p&&!t.deleted&&m.month>=saved.start)put(db,{id:'planned:'+m.month+':'+saved.id,kind:'planned',month:m.month,type:t.type,name:t.name,category:t.category||'',place:t.place||'',amount:t.amount,day:t.day||1,template:saved.id,status:'pending'});}return saved}
 export function ils(t){if(t.currency==='USD')return t.rate?Math.round(t.amount*t.rate):null;return t.amount}
 export function transactions(db,month){return list(db,'transaction').filter(x=>x.date.slice(0,7)===month)}
+export function spendingGroups(db,month){
+ const amounts={living:0,leisure:0};
+ for(const t of transactions(db,month)){
+  if(t.type!=='expenses')continue;
+  const amount=ils(t);if(amount===null)continue;
+  const category=db.entities[t.category||db.entities[t.refundOf]?.category]||{};
+  amounts[categoryGroup(category)]+=amount*(t.refundOf?-1:1);
+ }
+ return amounts;
+}
 export function totals(db,month){let income=0,expenses=0,savings=0,pending=0,estimated=0;for(const t of transactions(db,month)){const n=ils(t);if(n===null){pending++;continue}if(t.estimated)estimated++;if(t.type==='income')income+=n;if(t.type==='expenses')expenses+=t.refundOf?-n:n;if(t.type==='savings')savings+=n}const plans=list(db,'planned').filter(x=>x.month===month),m=list(db,'month').find(x=>x.month===month);let commitments=plans.filter(x=>x.status==='pending'&&x.type!=='income').reduce((s,x)=>s+x.amount,0);return {income,expenses,savings,pending,estimated,remain:income-expenses-savings,available:income-expenses-savings-commitments,commitments,plannedIncome:plans.filter(x=>x.status!=='skipped'&&x.type==='income').reduce((s,x)=>s+x.amount,0),plannedSavings:plans.filter(x=>x.status!=='skipped'&&x.type==='savings').reduce((s,x)=>s+x.amount,0),plannedExpenses:monthlyExpenseBudget(db,month),expenseRemaining:monthlyExpenseBudget(db,month)-expenses,plannedSpecificExpenses:plans.filter(p=>p.type==='expenses'&&p.status!=='skipped').reduce((sum,p)=>sum+p.amount,0)}}
 export function spent(db,month,category){return transactions(db,month).filter(t=>t.type==='expenses'&&t.category===category).reduce((s,t)=>s+(ils(t)||0)*(t.refundOf?-1:1),0)}
 export function confirm(db,id,changes={}){const p=db.entities[id];if(!p||p.deleted||p.status!=='pending')throw Error('הפריט כבר אושר או דולג');const t=put(db,{kind:'transaction',type:p.type,name:p.name,category:p.category,place:p.place,amount:p.amount,currency:'ILS',date:dateFor(p.month,p.day),...changes,id:'transaction:'+p.id,planned:p.id});put(db,{...p,status:'paid',transaction:t.id});return t}

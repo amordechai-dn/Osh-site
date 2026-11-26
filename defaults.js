@@ -55,3 +55,15 @@ export function hasUserContent(db){return Object.values(db.entities).some(e=>
   ['transaction','template','planned','category','place'].includes(e.kind)&&
     !(e.id.startsWith('default:')&&e.rev===REV)||
   e.kind==='expense-budget'||e.kind==='month'&&(e.expenseBudget>0||e.expenseBudgetOverride||(e.budgets||[]).some(b=>b.amount>0)))}
+
+export const expenseGroupLabels={living:'מחיה',leisure:'מותרות'};
+const livingCategories=new Set(['groceries','home','pharmacy','clothing','transport','health','communications','pets','housing']);
+// Existing categories get a suggested group without rewriting their records.
+// An explicit user choice always wins, including for starter categories.
+export function categoryGroup(category={}){
+  if(Object.hasOwn(expenseGroupLabels,category.spendingGroup))return category.spendingGroup;
+  const name=normalizeName(category.name);
+  if([normalizeName('מותרות'),normalizeName('פנאי וקניות')].includes(name))return 'leisure';
+  const match=groups.find(([,label,aliases])=>[label,...aliases].some(n=>normalizeName(n)===name))||groups.find(([slug])=>category.id==='default:category:'+slug);
+  return match&&!livingCategories.has(match[0])?'leisure':'living';
+}
